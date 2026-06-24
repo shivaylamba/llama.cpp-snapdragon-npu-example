@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>llama.cpp NPU Chat</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="chat-pane" aria-label="Chat">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">llama.cpp</p>
+            <h1>Snapdragon NPU Chat</h1>
+          </div>
+          <div class="status-pill" id="serverStatus" data-state="checking">Checking server</div>
+        </header>
+
+        <div class="messages" id="messages" aria-live="polite"></div>
+
+        <form class="composer" id="chatForm">
+          <textarea
+            id="prompt"
+            rows="2"
+            autocomplete="off"
+            placeholder="Ask the local model anything..."
+            aria-label="Message"
+          ></textarea>
+          <div class="composer-actions">
+            <button type="button" class="secondary" id="stopButton" disabled>Stop</button>
+            <button type="submit" id="sendButton">Send</button>
+          </div>
+        </form>
+      </section>
+
+      <aside class="side-pane" aria-label="Runtime controls">
+        <section class="panel">
+          <h2>Runtime</h2>
+          <dl class="facts">
+            <div>
+              <dt>Model</dt>
+              <dd id="modelName">snapdragon-npu</dd>
+            </div>
+            <div>
+              <dt>Device</dt>
+              <dd>HTP0</dd>
+            </div>
+            <div>
+              <dt>Offload</dt>
+              <dd>-ngl 99</dd>
+            </div>
+            <div>
+              <dt>Streaming</dt>
+              <dd id="streamState">Idle</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="panel">
+          <h2>Generation</h2>
+          <label class="field">
+            <span>Temperature</span>
+            <input id="temperature" type="range" min="0" max="1.5" step="0.05" value="0.7">
+            <output id="temperatureValue">0.70</output>
+          </label>
+          <label class="field">
+            <span>Max tokens</span>
+            <input id="maxTokens" type="number" min="16" max="1024" step="16" value="256">
+          </label>
+          <button type="button" class="secondary full" id="clearButton">Clear Chat</button>
+        </section>
+
+        <section class="panel">
+          <h2>NPU Proof</h2>
+          <ul class="proof-list">
+            <li id="proofServer">Server launched with HTP0</li>
+            <li id="proofHealth">Health endpoint pending</li>
+            <li>Server log should show HTP0 as a Hexagon device</li>
+          </ul>
+          <p class="log-hint">Open <code>logs\npu-chat-server.err.log</code> to confirm <code>HTP0 : Hexagon</code>.</p>
+        </section>
+      </aside>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

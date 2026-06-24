@@ -1,0 +1,14 @@
+gguf/
+models/
+pkg-snapdragon/
+build*/
+logs/
+*.gguf
+*.log
+*.tmp
+.vs/
+.vscode/
+*.user
+*.suo
+*.pfx
+*.cer
