@@ -72,7 +72,7 @@ function parseChunk(buffer, onData) {
 
 function readDelta(payload) {
   const choice = payload?.choices?.[0];
-  return choice?.delta?.content ?? choice?.message?.content ?? payload?.content ?? "";
+  return choice?.delta?.content ?? choice?.delta?.reasoning_content ?? choice?.message?.content ?? payload?.content ?? "";
 }
 
 function buildRequest(stream) {
@@ -88,7 +88,7 @@ function buildRequest(stream) {
 
 function readMessage(payload) {
   const choice = payload?.choices?.[0];
-  return choice?.message?.content ?? choice?.text ?? payload?.content ?? "";
+  return choice?.message?.content ?? choice?.message?.reasoning_content ?? choice?.text ?? payload?.content ?? "";
 }
 
 async function refreshServerState() {

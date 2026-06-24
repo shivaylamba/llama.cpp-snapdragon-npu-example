@@ -166,3 +166,50 @@ It is not good for reliable math or high-quality assistant answers.
 `qwen2.5-0.5b-instruct-q4_0` is a better default for this example. It is still
 small enough to test quickly, but gives more useful answers than the 135M
 smoke-test model.
+
+## Gemma 4 E2B Result
+
+Gemma 4 E2B was also tested with the same llama.cpp Snapdragon NPU runtime.
+
+The official llama.cpp integration path from Google points to:
+
+```text
+ggml-org/gemma-4-E2B-it-GGUF
+```
+
+The tested file was:
+
+```text
+C:\Users\Admin\Documents\llamacpp\gguf\gemma-4-E2B-it-Q8_0.gguf
+```
+
+It is about 4.63 GiB. The tested run used:
+
+```powershell
+.\start-npu-chat.ps1 -Model "gemma-4-E2B-it-Q8_0.gguf"
+```
+
+The server reported:
+
+```text
+model_path: C:\Users\Admin\Documents\llamacpp\gguf\gemma-4-E2B-it-Q8_0.gguf
+HTP0 : Hexagon
+server is listening on http://127.0.0.1:8080
+```
+
+Streaming worked through `/v1/chat/completions`. One short prompt produced:
+
+```text
+Gemma is running.
+```
+
+Observed speed was much slower than Qwen 0.5B Q4:
+
+```text
+prompt eval: about 20 tokens/sec
+generation: about 4 tokens/sec
+```
+
+Gemma 4 can stream `reasoning_content` chunks before `content` chunks, so the
+frontend parser reads both fields. Otherwise, some Gemma prompts can look blank
+even though llama.cpp is returning streamed data.

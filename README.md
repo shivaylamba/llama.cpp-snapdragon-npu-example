@@ -232,6 +232,9 @@ assistant message as it arrives.
 If a stream ends without text, the UI retries once with a non-stream request.
 This handles cases where a tiny model emits an immediate stop token.
 
+The UI also reads `reasoning_content` chunks. This matters for Gemma 4 E2B,
+which can stream thinking text before normal `content` chunks.
+
 ## Model Notes
 
 The default model is still small on purpose:
@@ -260,9 +263,56 @@ Other model candidates to test:
 - `SmolLM2-360M-Instruct-Q4_0.gguf`
 - `Qwen2.5-1.5B-Instruct-Q4_0.gguf`
 - `Llama-3.2-1B-Instruct-Q4_0.gguf`
+- `gemma-4-E2B-it-Q8_0.gguf`
 
 For Snapdragon Hexagon testing, start with `Q4_0` GGUFs before trying more
 complex quantization formats.
+
+## Gemma 4 E2B Test
+
+Google's llama.cpp integration docs point to:
+
+```text
+ggml-org/gemma-4-E2B-it-GGUF
+```
+
+The tested local file was:
+
+```text
+gguf\gemma-4-E2B-it-Q8_0.gguf
+```
+
+The file is about 4.63 GiB. The llama.cpp `-hf` downloader was available in the
+binary, but this local build did not include HTTPS support for that downloader,
+so the model was downloaded with `curl.exe` instead:
+
+```powershell
+curl.exe -L --fail --progress-bar -o gguf\gemma-4-E2B-it-Q8_0.gguf "https://huggingface.co/ggml-org/gemma-4-E2B-it-GGUF/resolve/main/gemma-4-E2B-it-Q8_0.gguf?download=true"
+```
+
+Run Gemma through the same chat UI:
+
+```powershell
+.\start-npu-chat.ps1 -Model "gemma-4-E2B-it-Q8_0.gguf"
+```
+
+The server log should show:
+
+```text
+HTP0 : Hexagon
+loading model '...\gguf\gemma-4-E2B-it-Q8_0.gguf'
+```
+
+Observed performance on the tested Snapdragon X Elite machine was roughly:
+
+```text
+prompt eval: about 20 tokens/sec
+generation: about 4 tokens/sec
+```
+
+Gemma E2B works, but the Q8_0 file is much larger and slower than the Qwen 0.5B
+Q4_0 default. Use it when you want to test the official Gemma llama.cpp path,
+not when you want the fastest demo.
 
 ## Troubleshooting
 
