@@ -1,5 +1,5 @@
 param(
-    [string] $Model = "SmolLM2-135M-Instruct-Q4_0.gguf",
+    [string] $Model = "qwen2.5-0.5b-instruct-q4_0.gguf",
     [string] $Device = "HTP0",
     [int] $Port = 8080,
     [string] $HostName = "127.0.0.1",

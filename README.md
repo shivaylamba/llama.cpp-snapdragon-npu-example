@@ -8,6 +8,9 @@ This repository does not vendor llama.cpp, Qualcomm SDKs, model files, or build
 artifacts. It contains the small frontend and launcher script used to test a
 local llama.cpp Snapdragon package.
 
+For a deeper walkthrough of what is running and how llama.cpp reaches the NPU,
+see [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ## What This Runs
 
 The tested setup used:
@@ -15,13 +18,13 @@ The tested setup used:
 - Machine: Snapdragon X Elite Windows PC
 - Runtime: `llama-server.exe` from a Snapdragon-enabled llama.cpp build
 - Backend target: `HTP0`, the Qualcomm Hexagon NPU device
-- Demo model: `SmolLM2-135M-Instruct-Q4_0.gguf`
+- Demo model: `qwen2.5-0.5b-instruct-q4_0.gguf`
 - API: OpenAI-compatible `POST /v1/chat/completions`
 - Streaming: Server-sent events read by the browser with `fetch()`
 
-The small SmolLM2 model is used as a proof-of-pipeline model. It loads quickly,
-keeps memory pressure low, and is useful for validating the NPU path. It is not
-intended to be a high-quality assistant model.
+The Qwen2.5 0.5B model is still small enough for quick Snapdragon NPU testing,
+but it gives better answers than the original tiny SmolLM2 135M smoke-test
+model.
 
 ## Architecture
 
@@ -66,7 +69,7 @@ Expected local runtime folders, not committed:
 ```text
 .
 |-- gguf/
-|   `-- SmolLM2-135M-Instruct-Q4_0.gguf
+|   `-- qwen2.5-0.5b-instruct-q4_0.gguf
 `-- pkg-snapdragon/
     |-- bin/
     |   `-- llama-server.exe
@@ -122,7 +125,7 @@ gguf\
 Put a compatible GGUF model in `gguf`. The default script expects:
 
 ```text
-gguf\SmolLM2-135M-Instruct-Q4_0.gguf
+gguf\qwen2.5-0.5b-instruct-q4_0.gguf
 ```
 
 Start the local server and chat UI:
@@ -231,10 +234,10 @@ This handles cases where a tiny model emits an immediate stop token.
 
 ## Model Notes
 
-The default model is small on purpose:
+The default model is still small on purpose:
 
 ```text
-SmolLM2-135M-Instruct-Q4_0.gguf
+qwen2.5-0.5b-instruct-q4_0.gguf
 ```
 
 It is useful for:
@@ -244,17 +247,17 @@ It is useful for:
 - validating the HTP/NPU path
 - testing browser streaming
 
-It is not ideal for:
+It is much better than a 135M smoke-test model, but it is still not ideal for:
 
 - math
 - reasoning
 - long conversations
 - high quality assistant answers
 
-Better model candidates to test next:
+Other model candidates to test:
 
+- `SmolLM2-135M-Instruct-Q4_0.gguf`
 - `SmolLM2-360M-Instruct-Q4_0.gguf`
-- `Qwen2.5-0.5B-Instruct-Q4_0.gguf`
 - `Qwen2.5-1.5B-Instruct-Q4_0.gguf`
 - `Llama-3.2-1B-Instruct-Q4_0.gguf`
 
