@@ -6,12 +6,16 @@ const stopButton = document.querySelector("#stopButton");
 const clearButton = document.querySelector("#clearButton");
 const serverStatus = document.querySelector("#serverStatus");
 const modelName = document.querySelector("#modelName");
+const modelFile = document.querySelector("#modelFile");
 const streamState = document.querySelector("#streamState");
 const temperature = document.querySelector("#temperature");
 const temperatureValue = document.querySelector("#temperatureValue");
 const maxTokens = document.querySelector("#maxTokens");
 const proofServer = document.querySelector("#proofServer");
 const proofHealth = document.querySelector("#proofHealth");
+const modelSelector = document.querySelector("#modelSelector");
+const modelCommand = document.querySelector("#modelCommand");
+const copyModelCommand = document.querySelector("#copyModelCommand");
 
 const chat = [
   {
@@ -21,6 +25,7 @@ const chat = [
 ];
 
 let abortController = null;
+let currentModelPath = "";
 
 function setStatus(text, state) {
   serverStatus.textContent = text;
@@ -34,6 +39,31 @@ function appendMessage(role, content) {
   messagesEl.appendChild(message);
   messagesEl.scrollTop = messagesEl.scrollHeight;
   return message;
+}
+
+function appendAssistantMessage() {
+  const message = document.createElement("div");
+  message.className = "message assistant";
+
+  const body = document.createElement("div");
+  body.className = "message-body";
+
+  const thinking = document.createElement("details");
+  thinking.className = "thinking-panel";
+  thinking.hidden = true;
+
+  const summary = document.createElement("summary");
+  summary.textContent = "Thinking";
+
+  const thinkingText = document.createElement("div");
+  thinkingText.className = "thinking-text";
+
+  thinking.append(summary, thinkingText);
+  message.append(body, thinking);
+  messagesEl.appendChild(message);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+
+  return { message, body, thinking, thinkingText };
 }
 
 function setBusy(isBusy) {
@@ -70,9 +100,12 @@ function parseChunk(buffer, onData) {
   return rest;
 }
 
-function readDelta(payload) {
+function readDeltaParts(payload) {
   const choice = payload?.choices?.[0];
-  return choice?.delta?.content ?? choice?.delta?.reasoning_content ?? choice?.message?.content ?? payload?.content ?? "";
+  return {
+    content: choice?.delta?.content ?? choice?.message?.content ?? payload?.content ?? "",
+    reasoning: choice?.delta?.reasoning_content ?? choice?.message?.reasoning_content ?? ""
+  };
 }
 
 function buildRequest(stream) {
@@ -86,9 +119,22 @@ function buildRequest(stream) {
   };
 }
 
-function readMessage(payload) {
+function readMessageParts(payload) {
   const choice = payload?.choices?.[0];
-  return choice?.message?.content ?? choice?.message?.reasoning_content ?? choice?.text ?? payload?.content ?? "";
+  return {
+    content: choice?.message?.content ?? choice?.text ?? payload?.content ?? "",
+    reasoning: choice?.message?.reasoning_content ?? ""
+  };
+}
+
+function filenameFromPath(path) {
+  return (path || "").split(/[\\/]/).filter(Boolean).pop() || "";
+}
+
+function updateModelCommand() {
+  const selected = modelSelector.value;
+  const port = new URL(window.location.href).port || "8080";
+  modelCommand.value = `.\\start-npu-chat.ps1 -Model "${selected}" -Port ${port}`;
 }
 
 async function refreshServerState() {
@@ -105,8 +151,15 @@ async function refreshServerState() {
     const health = await healthRes.json().catch(() => ({}));
     const props = await propsRes.json().catch(() => ({}));
     const alias = props.model_alias || props.default_generation_settings?.model || "snapdragon-npu";
+    const filename = filenameFromPath(props.model_path);
 
     modelName.textContent = alias;
+    modelFile.textContent = filename || "Unknown";
+    currentModelPath = props.model_path || "";
+    if (filename && [...modelSelector.options].some((option) => option.value === filename)) {
+      modelSelector.value = filename;
+    }
+    updateModelCommand();
     proofServer.classList.add("ok");
     proofHealth.classList.add("ok");
     proofHealth.textContent = `Health endpoint ${health.status || "ready"}`;
@@ -122,7 +175,7 @@ async function sendMessage(text) {
   appendMessage("user", text);
   chat.push({ role: "user", content: text });
 
-  const assistantMessage = appendMessage("assistant", "");
+  const assistantMessage = appendAssistantMessage();
   abortController = new AbortController();
   setBusy(true);
 
@@ -142,6 +195,22 @@ async function sendMessage(text) {
     const decoder = new TextDecoder();
     let buffer = "";
     let fullText = "";
+    let thinkingText = "";
+
+    function applyDelta(parts) {
+      if (parts.reasoning) {
+        thinkingText += parts.reasoning;
+        assistantMessage.thinking.hidden = false;
+        assistantMessage.thinkingText.textContent = thinkingText;
+      }
+
+      if (parts.content) {
+        fullText += parts.content;
+        assistantMessage.body.textContent = fullText;
+      }
+
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
 
     while (true) {
       const { value, done } = await reader.read();
@@ -151,22 +220,13 @@ async function sendMessage(text) {
 
       buffer += decoder.decode(value, { stream: true });
       buffer = parseChunk(buffer, (payload) => {
-        const delta = readDelta(payload);
-        if (delta) {
-          fullText += delta;
-          assistantMessage.textContent = fullText;
-          messagesEl.scrollTop = messagesEl.scrollHeight;
-        }
+        applyDelta(readDeltaParts(payload));
       });
     }
 
     if (buffer.trim()) {
       parseChunk(`${buffer}\n\n`, (payload) => {
-        const delta = readDelta(payload);
-        if (delta) {
-          fullText += delta;
-          assistantMessage.textContent = fullText;
-        }
+        applyDelta(readDeltaParts(payload));
       });
     }
 
@@ -180,10 +240,16 @@ async function sendMessage(text) {
 
       if (retry.ok) {
         const retryPayload = await retry.json();
-        fullText = readMessage(retryPayload);
-        assistantMessage.textContent = fullText || "(Model ended without text. Clear chat and try again.)";
+        const retryParts = readMessageParts(retryPayload);
+        fullText = retryParts.content;
+        if (retryParts.reasoning) {
+          thinkingText += retryParts.reasoning;
+          assistantMessage.thinking.hidden = false;
+          assistantMessage.thinkingText.textContent = thinkingText;
+        }
+        assistantMessage.body.textContent = fullText || "(Model ended without final text. Check Thinking or clear chat and try again.)";
       } else {
-        assistantMessage.textContent = "(Model ended without text. Clear chat and try again.)";
+        assistantMessage.body.textContent = "(Model ended without final text. Check Thinking or clear chat and try again.)";
       }
     }
 
@@ -192,7 +258,7 @@ async function sendMessage(text) {
     }
   } catch (error) {
     const stopped = error?.name === "AbortError";
-    assistantMessage.textContent = stopped ? "(Stopped.)" : `Request failed: ${error.message}`;
+    assistantMessage.body.textContent = stopped ? "(Stopped.)" : `Request failed: ${error.message}`;
   } finally {
     abortController = null;
     setBusy(false);
@@ -232,6 +298,24 @@ clearButton.addEventListener("click", () => {
   appendMessage("system", "Chat cleared.");
 });
 
+modelSelector.addEventListener("change", updateModelCommand);
+
+copyModelCommand.addEventListener("click", async () => {
+  modelCommand.select();
+  try {
+    await navigator.clipboard.writeText(modelCommand.value);
+    copyModelCommand.textContent = "Copied";
+  } catch {
+    document.execCommand("copy");
+    copyModelCommand.textContent = "Copied";
+  }
+
+  setTimeout(() => {
+    copyModelCommand.textContent = "Copy Command";
+  }, 1200);
+});
+
 appendMessage("system", "Ready for a local NPU-backed chat request.");
+updateModelCommand();
 refreshServerState();
 setInterval(refreshServerState, 15000);

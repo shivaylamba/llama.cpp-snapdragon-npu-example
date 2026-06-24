@@ -43,6 +43,10 @@
               <dd id="modelName">snapdragon-npu</dd>
             </div>
             <div>
+              <dt>File</dt>
+              <dd id="modelFile">Unknown</dd>
+            </div>
+            <div>
               <dt>Device</dt>
               <dd>HTP0</dd>
             </div>
@@ -55,6 +59,24 @@
               <dd id="streamState">Idle</dd>
             </div>
           </dl>
+        </section>
+
+        <section class="panel">
+          <h2>Model</h2>
+          <label class="field">
+            <span>Selection</span>
+            <select id="modelSelector" aria-label="Model selection">
+              <option value="qwen2.5-0.5b-instruct-q4_0.gguf">Qwen2.5 0.5B Q4_0</option>
+              <option value="gemma-4-E2B-it-Q8_0.gguf">Gemma 4 E2B Q8_0</option>
+              <option value="SmolLM2-135M-Instruct-Q4_0.gguf">SmolLM2 135M Q4_0</option>
+              <option value="SmolLM2-135M-Instruct-Q4_K_M.gguf">SmolLM2 135M Q4_K_M</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Restart command</span>
+            <textarea id="modelCommand" rows="3" readonly aria-label="Model restart command"></textarea>
+          </label>
+          <button type="button" class="secondary full" id="copyModelCommand">Copy Command</button>
         </section>
 
         <section class="panel">

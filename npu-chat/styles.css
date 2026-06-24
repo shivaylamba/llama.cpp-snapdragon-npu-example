@@ -28,7 +28,8 @@ body {
 
 button,
 textarea,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -176,7 +177,8 @@ textarea {
 }
 
 textarea:focus,
-input:focus {
+input:focus,
+select:focus {
   border-color: rgba(17, 106, 90, 0.6);
   box-shadow: 0 0 0 3px rgba(17, 106, 90, 0.12);
 }
@@ -280,10 +282,19 @@ dd {
   width: 100%;
 }
 
-input[type="number"] {
+input[type="number"],
+select {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 10px 12px;
+  color: var(--text);
+  background: var(--surface);
+}
+
+textarea[readonly] {
+  min-height: 82px;
+  color: var(--text);
+  background: var(--surface-soft);
 }
 
 output {
@@ -354,6 +365,41 @@ code {
   background: var(--surface-soft);
   border-radius: 4px;
   padding: 1px 4px;
+}
+
+.message-body:empty::after {
+  content: "Waiting for final answer...";
+  color: var(--muted);
+}
+
+.thinking-panel {
+  margin-top: 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.thinking-panel[hidden] {
+  display: none;
+}
+
+.thinking-panel summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.thinking-text {
+  margin-top: 8px;
+  max-height: 220px;
+  overflow: auto;
+  color: #3d4c49;
+  background: var(--surface-soft);
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
 }
 
 @media (max-width: 900px) {
